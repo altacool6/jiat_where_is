@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>동적 아이콘 마커 예제</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body { margin:0; padding:0; }
+    #map { width: 100vh; height: 50vh; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // 지도 초기화
+    var map = L.map('map').setView([37.5665, 126.9780], 15);
+
+    // OpenStreetMap 타일 추가
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 커스텀 아이콘 정의
+    var movingIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/685/685352.png',
+      iconSize: [40, 40],
+      iconAnchor: [20, 40]
+    });
+
+    var stoppedIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484662.png',
+      iconSize: [40, 40],
+      iconAnchor: [20, 40]
+    });
+
+    // 최초 마커 생성
+    var currentLat = 37.5665;
+    var currentLon = 126.9780;
+    var marker = L.marker([currentLat, currentLon], {icon: movingIcon}).addTo(map);
+
+    // 상태 시뮬레이션 (주행/정지 랜덤)
+    function updateVehicle() {
+      var fatchedData = fetch('http://172.168.15.220:5000/cur_value?topic=v2i-pvd', { mode: 'no-cors'});  // Flask에서 제공하는 위치 API 호출
+      
+      var fatchedJson = fatchedData.then(response => response.json());
+
+      fatchedJson.then(fatchedJson => {
+        const lat = fatchedJson.lat;
+        const lon = fatchedJson._long;
+        //console.log("현재좌표 : " lat, lon)
+
+        //var deltaLat = (Math.random() - 0.5) * 0.0008;
+        //var deltaLon = (Math.random() - 0.5) * 0.001;
+
+        // 마커 이동
+        //marker.setLatLng([lat, lon]);
+
+        // 상태는 임시 랜덤 (원한다면 서버에서 status 같이 받아도 됨)
+        //const isMoving = Math.random() > 0.5;
+
+        //if (isMoving) {
+        //    marker.setIcon(movingIcon);
+        //    marker.bindPopup("🚗 주행 중").openPopup();
+        //} else {
+        //    marker.setIcon(stoppedIcon);
+        //    marker.bindPopup("🛑 정지 중").openPopup();
+        //}
+
+        //map.panTo([lat, lon]);
+        })
+        .catch(error => console.error("위치 가져오기 실패:", error));
+    }
+
+    // 3초마다 상태 갱신
+    setInterval(updateVehicle, 500);
+  </script>
+</body>
+</html>

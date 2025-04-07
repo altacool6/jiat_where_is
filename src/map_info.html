@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaflet 지도 + 텍스트 레이아웃</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+    .info-panel {
+      flex: 1;
+      padding: 20px;
+      background: #f5f5f5;
+      overflow-y: auto;
+    }
+    /* 모바일 대응 (화면이 작을 때 세로 배치) */
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+      #map {
+        height: 50vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 왼쪽: 지도 -->
+    <div id="map"></div>
+    
+    <!-- 오른쪽: 텍스트 정보 -->
+    <div class="info-panel">
+      <h2>서울 시청 정보</h2>
+      <p><strong>위치:</strong> 서울특별시 중구 세종대로 110</p>
+      <p><strong>역사:</strong> 1926년 완공된 대한민국의 대표적인 건축물입니다.</p>
+      <p><strong>주요 시설:</strong></p>
+      <ul>
+        <li>시장실</li>
+        <li>다목적홀</li>
+        <li>시민청</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    // 지도 초기화 (서울 시청 좌표)
+    const map = L.map('map').setView([37.5665, 126.9780], 15);
+    
+    // OpenStreetMap 타일 레이어 추가
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    
+    // 마커 추가
+    L.marker([37.5665, 126.9780])
+      .addTo(map)
+      .bindPopup("<b>서울 시청</b>");
+  </script>
+</body>
+</html>
