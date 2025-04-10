@@ -1,80 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>동적 아이콘 마커 예제</title>
+  <meta charset="utf-8" />
+  <title>JIAT 관제</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS/JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
   <style>
-    body { margin:0; padding:0; }
-    #map { width: 100vh; height: 50vh; }
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+
+    #map { height: 100vh; width: 50vw;}
+
+    #info {
+      flex: 1;
+      padding: 16px;
+      background: #f4f4f4;
+      border-left: 1px solid #ccc;
+    }
+
+    #info h2 {
+      margin-top: 0;
+    }
+
+    .data-row {
+      margin: 10px 0;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
-
+  <div id="info">
+    <h2>실시간 차량 정보</h2>
+    <div class="data-row">위도: <span id="lat">-</span></div>
+    <div class="data-row">경도: <span id="lng">-</span></div>
+    <div class="data-row">속도: <span id="speed">-</span> km/h</div>
+    <div class="data-row">헤딩: <span id="heading">-</span> °</div>
+  </div>
   <script>
-    // 지도 초기화
-    var map = L.map('map').setView([37.5665, 126.9780], 15);
+    // 1. 지도 초기화
+    const map = L.map('map').setView([35.5384, 129.3114], 13); // 울산 중심 좌표 예시
 
-    // OpenStreetMap 타일 추가
+    // 2. 기본 타일 레이어 추가 (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      maxZoom: 19,
     }).addTo(map);
 
-    // 커스텀 아이콘 정의
-    var movingIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/685/685352.png',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40]
-    });
+    // 3. 마커 선언 (초기위치 예시)
+    let carMarker = L.marker([35.5384, 129.3114]).addTo(map)
+      .bindPopup('내 차 위치');
 
-    var stoppedIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/484/484662.png',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40]
-    });
+    // 4. 주기적으로 REST API 호출해서 위치 갱신
+    async function updateCarLocation() {
+      try {
+        const response = await fetch('http://localhost:5000/pvd'); // 차량 위치 JSON API
+        const data = await response.json();
+        console.log(data);
+        // 예시: { "lat": 35.5423, "lng": 129.3278 }
+        const lat = data.lat;
+        const lng = data._long;
+        const speed = data.speed;
+        const heading = data.heading;
+        
+        // 마커 위치 이동
+        carMarker.setLatLng([lat, lng]);
+        map.panTo([lat, lng]); // 지도 중심 이동 (선택)
 
-    // 최초 마커 생성
-    var currentLat = 37.5665;
-    var currentLon = 126.9780;
-    var marker = L.marker([currentLat, currentLon], {icon: movingIcon}).addTo(map);
+        // 👉 오른쪽 정보 갱신
+        document.getElementById('lat').innerText = lat.toFixed(6);
+        document.getElementById('lng').innerText = lng.toFixed(6);
+        document.getElementById('speed').innerText = speed.toFixed(1);
+        document.getElementById('heading').innerText = heading.toFixed(1);
 
-    // 상태 시뮬레이션 (주행/정지 랜덤)
-    function updateVehicle() {
-      var fatchedData = fetch('http://172.168.15.220:5000/cur_value?topic=v2i-pvd', { mode: 'no-cors'});  // Flask에서 제공하는 위치 API 호출
-      
-      var fatchedJson = fatchedData.then(response => response.json());
-
-      fatchedJson.then(fatchedJson => {
-        const lat = fatchedJson.lat;
-        const lon = fatchedJson._long;
-        //console.log("현재좌표 : " lat, lon)
-
-        //var deltaLat = (Math.random() - 0.5) * 0.0008;
-        //var deltaLon = (Math.random() - 0.5) * 0.001;
-
-        // 마커 이동
-        //marker.setLatLng([lat, lon]);
-
-        // 상태는 임시 랜덤 (원한다면 서버에서 status 같이 받아도 됨)
-        //const isMoving = Math.random() > 0.5;
-
-        //if (isMoving) {
-        //    marker.setIcon(movingIcon);
-        //    marker.bindPopup("🚗 주행 중").openPopup();
-        //} else {
-        //    marker.setIcon(stoppedIcon);
-        //    marker.bindPopup("🛑 정지 중").openPopup();
-        //}
-
-        //map.panTo([lat, lon]);
-        })
-        .catch(error => console.error("위치 가져오기 실패:", error));
+      } catch (error) {
+        console.error('차량 위치 갱신 실패:', error);
+      }
     }
 
-    // 3초마다 상태 갱신
-    setInterval(updateVehicle, 500);
+    // 5. 일정 주기로 갱신 (예: 3초마다)
+    setInterval(updateCarLocation, 500);
+
+    // 페이지 로드시 한 번 갱신
+    updateCarLocation();
   </script>
 </body>
 </html>
